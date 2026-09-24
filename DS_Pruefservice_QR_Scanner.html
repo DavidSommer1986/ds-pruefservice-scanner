@@ -19,8 +19,8 @@ p{margin:0 0 10px;font-size:14px;line-height:1.45;color:#d0d0d0}
 #video{display:block;width:100%;height:auto;min-height:320px;object-fit:cover}
 #scanCanvas{display:none}
 .frame{position:absolute;left:50%;top:50%;width:62%;aspect-ratio:1/1;transform:translate(-50%,-50%);border:4px solid #fff;border-radius:10px;pointer-events:none}
-#status{min-height:25px;margin:12px 0;font-weight:bold;font-size:14px}
-button{width:100%;border:0;border-radius:10px;padding:14px;margin-top:8px;font-size:16px;font-weight:bold}
+#status{min-height:22px;margin:8px 0;font-weight:bold;font-size:13px;line-height:1.25}
+button{width:100%;border:0;border-radius:9px;padding:11px;margin-top:6px;font-size:14px;font-weight:bold}
 #again{background:#f28c00;color:#fff}
 #close{background:#555;color:#fff}
 .hidden{display:none}
@@ -79,6 +79,19 @@ function sendResult(value){
   sent=true;
   scanning=false;
 
+  let anzeige = text;
+
+  /*
+   * Falls ein alter QR-Code noch die komplette Apps-Script-URL
+   * enthält, zeigen wir trotzdem nur die Inventarnummer an.
+   * So wird der Scanner nicht durch die lange URL riesig.
+   */
+  try {
+    const url = new URL(text);
+    const inventar = url.searchParams.get("inventar");
+    if (inventar) anzeige = inventar;
+  } catch(e) {}
+
   if(window.opener && !window.opener.closed){
     window.opener.postMessage({
       type:"DS_PRUEFSERVICE_QR_SCAN",
@@ -86,10 +99,10 @@ function sendResult(value){
       token:token
     },"*");
 
-    setStatus("✓ QR-Code erkannt – Arbeitsmittel wird geladen …");
+    setStatus("✓ QR-Code erkannt: " + anzeige);
     setTimeout(()=>window.close(),500);
   }else{
-    setStatus("✓ QR-Code erkannt: "+text);
+    setStatus("✓ QR-Code erkannt: " + anzeige);
     again.classList.remove("hidden");
     sent=false;
   }
