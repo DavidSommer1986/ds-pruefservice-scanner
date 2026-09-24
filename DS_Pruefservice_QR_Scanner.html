@@ -96,26 +96,65 @@ function scanFrame(){
 
 function sendResult(text){
   if(sending)return;
-  sending=true;scanning=false;
+
+  sending=true;
+  scanning=false;
   status("QR-Code erkannt – Prüfseite wird geöffnet …");
   stopCamera();
-  try{
-    const url=new URL(text,window.location.href);
-    if(!url.searchParams.get("inventar")){
-      url.searchParams.set("inventar",text);
+
+  // QR-Inhalt sauber auswerten.
+  // Die vorhandenen Etiketten enthalten normalerweise die komplette Prüf-URL.
+  let zielUrl = "";
+
+  try {
+    const gelesenerText = String(text || "").trim();
+
+    if(!gelesenerText){
+      throw new Error("Leerer QR-Inhalt");
     }
-    if(window.opener&&!window.opener.closed){
-      // Direkte Navigation des ursprünglichen Prüf-Tabs.
-      // Dadurch gibt es keinen alten Scanwert und keinen postMessage-Zwischenschritt.
-      window.opener.location.href=url.toString();
-      window.close();
-      setTimeout(()=>{status("Prüfseite wurde im ursprünglichen Tab geöffnet.");},500);
-    }else{
-      window.location.href=url.toString();
+
+    // Ist bereits eine komplette URL im QR-Code enthalten,
+    // wird GENAU diese URL verwendet.
+    try {
+      const url = new URL(gelesenerText);
+
+      if(url.searchParams.get("inventar")){
+        zielUrl = url.toString();
+      }
+    } catch(e) {
+      // Keine URL – dann behandeln wir den Inhalt als Inventarnummer.
     }
-  }catch(e){
+
+    // Falls nur DEP-xxxx im QR-Code steht, die bekannte Prüf-App verwenden.
+    if(!zielUrl){
+      const inventar = gelesenerText;
+      zielUrl =
+        "https://script.google.com/macros/s/AKfycbymZlnB-po3oq-dZYXM9-D_ZjlFnLZ9Dtu6pHKOa6R4Or9zaeM_X_FRkfRn-NS4ikPF/exec" +
+        "?inventar=" +
+        encodeURIComponent(inventar);
+    }
+
+    // Wichtig: NICHT window.opener.closed abfragen und NICHT versuchen,
+    // den QR-Inhalt nochmals zu verändern.
+    // Der ursprüngliche Prüf-Tab bekommt exakt die erkannte URL.
+    if(window.opener){
+      try {
+        window.opener.location.href = zielUrl;
+        window.close();
+        return;
+      } catch(e) {
+        // Falls der Browser den Zugriff auf den ursprünglichen Tab blockiert,
+        // wird die Prüfseite direkt in diesem Tab geöffnet.
+      }
+    }
+
+    window.location.href = zielUrl;
+
+  } catch(e) {
     sending=false;
-    status("QR-Code konnte nicht verarbeitet werden.");
+    scanning=true;
+    status("QR-Code konnte nicht verarbeitet werden. Bitte erneut scannen.");
+    animationId=requestAnimationFrame(scanFrame);
   }
 }
 
