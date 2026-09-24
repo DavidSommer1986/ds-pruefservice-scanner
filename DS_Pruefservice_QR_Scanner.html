@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>DS Prüfservice – QR-Scanner</title>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#111;color:#fff;font-family:Arial,sans-serif;padding:14px}
+.box{max-width:560px;margin:auto;text-align:center}
+h1{font-size:23px;margin:8px 0}
+p{font-size:14px;color:#ccc;line-height:1.4}
+#reader{width:100%;max-width:520px;margin:18px auto 10px;border-radius:14px;overflow:hidden;background:#000}
+#status{min-height:24px;margin:12px 0;font-weight:bold}
+button{width:100%;border:0;border-radius:10px;padding:14px;margin-top:8px;font-size:16px;font-weight:bold}
+#again{background:#f28c00;color:#fff}
+#close{background:#555;color:#fff}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<main class="box">
+<h1>📷 DS Prüfservice</h1>
+<p>QR-Code des nächsten Arbeitsmittels vor die Kamera halten.</p>
+<div id="reader"></div>
+<div id="status">Kamera wird gestartet …</div>
+<button id="again" class="hidden">📷 Erneut scannen</button>
+<button id="close">Fenster schließen</button>
+</main>
+
+<script>
+let scanner=null;
+let scanning=false;
+const token=new URLSearchParams(location.search).get("token")||"";
+const status=document.getElementById("status");
+const again=document.getElementById("again");
+
+function setStatus(t){status.textContent=t;}
+
+async function stopScanner(){
+  scanning=false;
+  if(scanner){
+    try{await scanner.stop();}catch(e){}
+    try{scanner.clear();}catch(e){}
+    scanner=null;
+  }
+}
+
+function sendResult(value){
+  if(!window.opener||window.opener.closed){
+    setStatus("QR erkannt: "+value);
+    again.classList.remove("hidden");
+    return;
+  }
+  window.opener.postMessage({
+    type:"DS_PRUEFSERVICE_QR_SCAN",
+    value:String(value||"").trim(),
+    token:token
+  },"*");
+  setStatus("✓ QR-Code erkannt – Arbeitsmittel wird geladen …");
+  setTimeout(()=>window.close(),300);
+}
+
+async function startScanner(){
+  await stopScanner();
+  again.classList.add("hidden");
+
+  if(typeof Html5Qrcode==="undefined"){
+    setStatus("QR-Scanner konnte nicht geladen werden.");
+    again.classList.remove("hidden");
+    return;
+  }
+
+  scanner=new Html5Qrcode("reader");
+  scanning=true;
+  setStatus("Kamera wird gestartet …");
+
+  const config={
+    fps:12,
+    qrbox:(w,h)=>{
+      const s=Math.floor(Math.min(w,h)*0.78);
+      return {width:Math.max(180,s),height:Math.max(180,s)};
+    },
+    aspectRatio:1,
+    disableFlip:false
+  };
+
+  try{
+    let cameras=[];
+    try{cameras=await Html5Qrcode.getCameras();}catch(e){}
+
+    if(cameras.length){
+      let cam=cameras.find(c=>{
+        const l=String(c.label||"").toLowerCase();
+        return l.includes("back")||l.includes("rear")||l.includes("environment")||l.includes("rück");
+      })||cameras[0];
+      await scanner.start(cam.id,config,sendResult,()=>{});
+    }else{
+      await scanner.start({facingMode:"environment"},config,sendResult,()=>{});
+    }
+
+    if(scanning)setStatus("✓ Kamera läuft – QR-Code vor die Kamera halten.");
+  }catch(e){
+    scanning=false;
+    console.error(e);
+    let msg="Kamera konnte nicht gestartet werden.";
+    if(e&&e.name==="NotAllowedError")msg="Kamerazugriff wurde blockiert. Bitte in den Browser-Einstellungen die Kamera für diese HTTPS-Seite erlauben und erneut scannen.";
+    else if(e&&e.name==="NotFoundError")msg="Keine Kamera gefunden.";
+    setStatus(msg);
+    again.classList.remove("hidden");
+  }
+}
+
+again.onclick=startScanner;
+document.getElementById("close").onclick=async()=>{await stopScanner();window.close();};
+window.addEventListener("pagehide",()=>{stopScanner();});
+startScanner();
+</script>
+</body>
+</html>
