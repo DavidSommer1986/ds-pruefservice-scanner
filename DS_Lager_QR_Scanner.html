@@ -353,17 +353,13 @@
 
 
     /*
-     * WICHTIG:
-     * Dieser Scanner ist ausschließlich für die
-     * D. Deppe Lager-App vorgesehen.
+     * Der Scanner gibt den erkannten Wert ausschließlich
+     * an die D. Deppe Lager-App zurück.
      *
-     * Es wird NICHT auf den Inhalt des QR-Codes
-     * weitergeleitet.
-     *
-     * Der erkannte Wert wird ausschließlich an
-     * das Fenster zurückgegeben, das diesen Scanner
-     * geöffnet hat.
+     * Der QR-Inhalt wird niemals als URL geöffnet.
      */
+
+    let rueckgabeErfolgreich = false;
 
     try {
 
@@ -383,12 +379,32 @@
 
         );
 
+        rueckgabeErfolgreich = true;
+
+        status.textContent =
+          "✓ Lagerplatz erkannt: " + text +
+          " – zurück zur Lager-App …";
+
+
+        /*
+         * Erst nach kurzer Zeit schließen.
+         * Falls der Browser das Schließen eines
+         * geöffneten Tabs nicht zulässt, bleibt eine
+         * sichtbare Rückmeldung stehen statt eines
+         * schwarzen Bildschirms.
+         */
 
         setTimeout(
           function() {
-            window.close();
+
+            try {
+              window.close();
+            } catch (error) {
+              console.error(error);
+            }
+
           },
-          300
+          700
         );
 
         return;
@@ -406,15 +422,18 @@
 
 
     /*
-     * Kein automatisches Öffnen des QR-Inhalts!
-     *
-     * Dadurch kann ein QR-Code mit einer URL
-     * niemals die Prüf-App oder das
-     * Arbeitsmittelkataster öffnen.
+     * Falls dieser Scanner direkt geöffnet wurde und
+     * deshalb kein opener vorhanden ist, wird der
+     * QR-Inhalt NICHT geöffnet.
      */
 
-    status.textContent =
-      "QR-Code erkannt: " + text;
+    if (!rueckgabeErfolgreich) {
+
+      status.textContent =
+        "✓ QR-Code erkannt: " + text +
+        " – bitte zur Lager-App zurückkehren.";
+
+    }
 
   }
 
