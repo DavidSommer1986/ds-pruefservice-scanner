@@ -1,18 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
-
-  <title>DD Lager – QR-Scanner</title>
+  <title>D. Deppe Lager – QR-Scanner</title>
 
   <style>
-
     * {
       box-sizing: border-box;
     }
@@ -23,16 +17,17 @@
       padding: 0;
       width: 100%;
       height: 100%;
-      background: #000;
+      background: #111;
       font-family: Arial, sans-serif;
       overflow: hidden;
     }
 
     #scanner {
-      position: relative;
+      position: fixed;
+      inset: 0;
       width: 100%;
       height: 100%;
-      background: #000;
+      background: #111;
     }
 
     #video {
@@ -41,6 +36,7 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+      background: #111;
     }
 
     #overlay {
@@ -49,31 +45,44 @@
       pointer-events: none;
     }
 
-    #rahmen {
+    #kopf {
       position: absolute;
-      left: 50%;
-      top: 50%;
-      width: min(78vw, 420px);
-      height: min(78vw, 420px);
-      transform: translate(-50%, -50%);
-      border: 4px solid #fff;
-      border-radius: 18px;
-      box-shadow:
-        0 0 0 9999px rgba(0, 0, 0, 0.45);
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 18px 15px;
+      text-align: center;
+      color: white;
+      background: rgba(0,0,0,0.55);
+      font-size: 20px;
+      font-weight: bold;
     }
 
     #status {
       position: absolute;
       left: 20px;
       right: 20px;
-      bottom: 35px;
+      bottom: 25px;
       padding: 15px;
       border-radius: 10px;
-      background: rgba(0, 0, 0, 0.75);
-      color: #fff;
       text-align: center;
-      font-size: 18px;
-      font-weight: bold;
+      color: white;
+      background: rgba(0,0,0,0.72);
+      font-size: 16px;
+    }
+
+    #rahmen {
+      position: absolute;
+      width: 70vw;
+      height: 70vw;
+      max-width: 330px;
+      max-height: 330px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border: 4px solid white;
+      border-radius: 18px;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.35);
     }
 
     #fehler {
@@ -83,40 +92,37 @@
       right: 20px;
       top: 50%;
       transform: translateY(-50%);
-      padding: 22px;
-      border-radius: 14px;
-      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      background: white;
       color: #222;
       text-align: center;
-      font-size: 18px;
+      z-index: 20;
     }
 
     #fehler button {
       margin-top: 15px;
-      padding: 12px 18px;
       border: 0;
       border-radius: 8px;
+      padding: 12px 18px;
+      background: #1f5f8b;
+      color: white;
       font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
     }
-
   </style>
-
 </head>
 
 <body>
 
   <div id="scanner">
 
-    <video
-      id="video"
-      autoplay
-      playsinline
-      muted
-    ></video>
+    <video id="video" autoplay playsinline muted></video>
 
     <div id="overlay">
+
+      <div id="kopf">
+        📷 D. Deppe Lager – QR-Scanner
+      </div>
 
       <div id="rahmen"></div>
 
@@ -128,19 +134,14 @@
 
     <div id="fehler">
 
-      <div>
-        Der Kamerazugriff konnte nicht gestartet werden.
-      </div>
+      <strong>QR-Scanner konnte nicht gestartet werden.</strong>
 
       <div style="margin-top:10px;">
         Bitte den Kamerazugriff erlauben und anschließend
         die Seite neu laden.
       </div>
 
-      <button
-        type="button"
-        onclick="location.reload()"
-      >
+      <button type="button" onclick="location.reload()">
         Erneut versuchen
       </button>
 
@@ -175,7 +176,6 @@
         throw new Error(
           "getUserMedia wird nicht unterstützt."
         );
-
       }
 
 
@@ -225,9 +225,7 @@
 
       status.style.display = "none";
       fehler.style.display = "block";
-
     }
-
   }
 
 
@@ -239,7 +237,6 @@
         "QR-Erkennung wird auf diesem Browser nicht unterstützt.";
 
       return;
-
     }
 
 
@@ -262,7 +259,6 @@
         "QR-Erkennung konnte nicht gestartet werden.";
 
       return;
-
     }
 
 
@@ -274,7 +270,6 @@
       ) {
 
         return;
-
       }
 
 
@@ -284,9 +279,7 @@
       ) {
 
         requestAnimationFrame(scannen);
-
         return;
-
       }
 
 
@@ -320,9 +313,7 @@
             );
 
             return;
-
           }
-
         }
 
       }
@@ -333,17 +324,14 @@
           "QR-Erkennung:",
           error
         );
-
       }
 
 
       requestAnimationFrame(scannen);
-
     }
 
 
     requestAnimationFrame(scannen);
-
   }
 
 
@@ -358,24 +346,20 @@
         .getTracks()
         .forEach(
           function(track) {
-
             track.stop();
-
           }
         );
-
     }
 
 
     /*
-     * Der Scanner gibt den erkannten Wert
-     * ausschließlich an die DD Lager-App zurück.
+     * Der Scanner gibt den erkannten Wert ausschließlich
+     * an die D. Deppe Lager-App zurück.
      *
-     * Der QR-Inhalt wird NICHT als URL geöffnet.
+     * Der QR-Inhalt wird niemals als URL geöffnet.
      */
 
     let rueckgabeErfolgreich = false;
-
 
     try {
 
@@ -397,37 +381,25 @@
 
         rueckgabeErfolgreich = true;
 
-
         status.textContent =
-          "✓ Lagerplatz erkannt: " +
-          text +
+          "✓ Lagerplatz erkannt: " + text +
           " – zurück zur Lager-App …";
 
 
         setTimeout(
-
           function() {
 
             try {
-
               window.close();
-
-            }
-
-            catch (error) {
-
+            } catch (error) {
               console.error(error);
-
             }
 
           },
-
           700
-
         );
 
         return;
-
       }
 
     }
@@ -438,21 +410,13 @@
         "Rückgabe an Lager-App fehlgeschlagen:",
         error
       );
-
     }
 
-
-    /*
-     * Falls der Scanner direkt geöffnet wurde
-     * und deshalb kein opener vorhanden ist,
-     * wird der QR-Inhalt NICHT geöffnet.
-     */
 
     if (!rueckgabeErfolgreich) {
 
       status.textContent =
-        "✓ QR-Code erkannt: " +
-        text +
+        "✓ QR-Code erkannt: " + text +
         " – bitte zur Lager-App zurückkehren.";
 
     }
@@ -470,12 +434,9 @@
           .getTracks()
           .forEach(
             function(track) {
-
               track.stop();
-
             }
           );
-
       }
 
     }
