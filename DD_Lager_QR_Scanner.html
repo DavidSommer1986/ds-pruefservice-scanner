@@ -339,76 +339,38 @@
 
     scannerAktiv = false;
 
-
     if (stream) {
-
-      stream
-        .getTracks()
-        .forEach(
-          function(track) {
-            track.stop();
-          }
-        );
-    }
-
-
-    /*
-     * Der Scanner gibt den erkannten Wert ausschließlich
-     * an die D. Deppe Lager-App zurück.
-     *
-     * Der QR-Inhalt wird niemals als URL geöffnet.
-     */
-
-    let rueckgabeErfolgreich = false;
-
-    try {
-      if (window.opener && !window.opener.closed) {
-        window.opener.postMessage(
-          {
-            type: "DS_LAGER_QR_SCAN",
-            value: text
-          },
-          "*"
-        );
-        rueckgabeErfolgreich = true;
-      }
-    } catch (error) {
-      console.error("Rückgabe an Lager-App fehlgeschlagen:", error);
+      stream.getTracks().forEach(function(track) {
+        track.stop();
+      });
     }
 
     const returnUrl = new URLSearchParams(window.location.search).get("returnUrl");
 
-    if (returnUrl) {
+    if (!returnUrl) {
       status.textContent =
-        "✓ Lagerplatz erkannt: " + text +
-        " – zurück zur Lager-App …";
-
-      setTimeout(function() {
-        try {
-          const url = new URL(returnUrl);
-          url.searchParams.set("lagerplatz", text);
-          window.location.replace(url.toString());
-        } catch (error) {
-          console.error("Rückgabe über returnUrl fehlgeschlagen:", error);
-          status.textContent = "QR-Code erkannt: " + text + " – bitte zur Lager-App zurückkehren.";
-        }
-      }, 500);
-      return;
-    }
-
-    if (rueckgabeErfolgreich) {
-      status.textContent =
-        "✓ Lagerplatz erkannt: " + text +
-        " – zurück zur Lager-App …";
-      setTimeout(function() {
-        try { window.close(); } catch (error) { console.error(error); }
-      }, 700);
+        "QR-Code erkannt: " + text +
+        " – keine Rückgabeadresse vorhanden.";
       return;
     }
 
     status.textContent =
-      "✓ QR-Code erkannt: " + text +
-      " – bitte zur Lager-App zurückkehren.";
+      "✓ Lagerplatz erkannt: " + text +
+      " – zurück zur Lager-App …";
+
+    setTimeout(function() {
+      try {
+        const url = new URL(returnUrl);
+        url.searchParams.set("lagerplatz", text);
+        window.location.replace(url.toString());
+      } catch (error) {
+        console.error("Rückgabe über returnUrl fehlgeschlagen:", error);
+        status.textContent =
+          "QR-Code erkannt: " + text +
+          " – Rückgabe zur Lager-App fehlgeschlagen.";
+      }
+    }, 300);
+  }
 
   window.addEventListener(
     "beforeunload",
