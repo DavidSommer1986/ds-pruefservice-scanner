@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-  <title>D. Deppe Lager – QR-Scanner v2026.10.06</title>
+  <title>D. Deppe Lager – QR-Scanner</title>
 
   <style>
     * {
@@ -121,7 +121,7 @@
     <div id="overlay">
 
       <div id="kopf">
-        📷 D. Deppe Lager – QR-Scanner v2026.10.06
+        📷 D. Deppe Lager – QR-Scanner
       </div>
 
       <div id="rahmen"></div>
@@ -339,38 +339,114 @@
 
     scannerAktiv = false;
 
+
     if (stream) {
-      stream.getTracks().forEach(function(track) {
-        track.stop();
-      });
+
+      stream
+        .getTracks()
+        .forEach(
+          function(track) {
+            track.stop();
+          }
+        );
     }
 
-    const returnUrl = new URLSearchParams(window.location.search).get("returnUrl");
 
-    if (!returnUrl) {
-      status.textContent =
-        "QR-Code erkannt: " + text +
-        " – keine Rückgabeadresse vorhanden.";
-      return;
-    }
+    /*
+     * Der Scanner gibt den erkannten Wert ausschließlich
+     * an die D. Deppe Lager-App zurück.
+     *
+     * Der QR-Inhalt wird niemals als URL geöffnet.
+     */
 
-    status.textContent =
-      "✓ Lagerplatz erkannt: " + text +
-      " – zurück zur Lager-App …";
+    let rueckgabeErfolgreich = false;
 
-    setTimeout(function() {
-      try {
-        const url = new URL(returnUrl);
-        url.searchParams.set("lagerplatz", text);
-        window.location.replace(url.toString());
-      } catch (error) {
-        console.error("Rückgabe über returnUrl fehlgeschlagen:", error);
+    try {
+
+      if (
+        window.opener &&
+        !window.opener.closed
+      ) {
+
+        window.opener.postMessage(
+
+          {
+            type: "DS_LAGER_QR_SCAN",
+            value: text
+          },
+
+          "*"
+
+        );
+
+        rueckgabeErfolgreich = true;
+
         status.textContent =
-          "QR-Code erkannt: " + text +
-          " – Rückgabe zur Lager-App fehlgeschlagen.";
+          "✓ Lagerplatz erkannt: " + text +
+          " – zurück zur Lager-App …";
+
+
+        /*
+         * Erst nach kurzer Zeit schließen.
+         * Falls der Browser das Schließen eines
+         * geöffneten Tabs nicht zulässt, bleibt eine
+         * sichtbare Rückmeldung stehen statt eines
+         * schwarzen Bildschirms.
+         */
+
+        setTimeout(
+          function() {
+            const returnUrl = new URLSearchParams(window.location.search).get("returnUrl");
+            if (returnUrl) {
+              try {
+                const url = new URL(returnUrl);
+                url.searchParams.set("lagerplatz", text);
+                window.location.replace(url.toString());
+                return;
+              } catch (error) {
+                console.error("Rückgabe-URL ungültig:", error);
+              }
+            }
+
+            try {
+              window.close();
+            } catch (error) {
+              console.error(error);
+            }
+          },
+          700
+        );
+
+        return;
       }
-    }, 300);
+
+    }
+
+    catch (error) {
+
+      console.error(
+        "Rückgabe an Lager-App fehlgeschlagen:",
+        error
+      );
+    }
+
+
+    /*
+     * Falls dieser Scanner direkt geöffnet wurde und
+     * deshalb kein opener vorhanden ist, wird der
+     * QR-Inhalt NICHT geöffnet.
+     */
+
+    if (!rueckgabeErfolgreich) {
+
+      status.textContent =
+        "✓ QR-Code erkannt: " + text +
+        " – bitte zur Lager-App zurückkehren.";
+
+    }
+
   }
+
 
   window.addEventListener(
     "beforeunload",
