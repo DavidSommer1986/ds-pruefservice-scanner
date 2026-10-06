@@ -362,81 +362,53 @@
     let rueckgabeErfolgreich = false;
 
     try {
-
-      if (
-        window.opener &&
-        !window.opener.closed
-      ) {
-
+      if (window.opener && !window.opener.closed) {
         window.opener.postMessage(
-
           {
             type: "DS_LAGER_QR_SCAN",
             value: text
           },
-
           "*"
-
         );
-
         rueckgabeErfolgreich = true;
-
-        status.textContent =
-          "✓ Lagerplatz erkannt: " + text +
-          " – zurück zur Lager-App …";
-
-
-        /*
-         * Erst nach kurzer Zeit schließen.
-         * Falls der Browser das Schließen eines
-         * geöffneten Tabs nicht zulässt, bleibt eine
-         * sichtbare Rückmeldung stehen statt eines
-         * schwarzen Bildschirms.
-         */
-
-        setTimeout(
-          function() {
-
-            try {
-              window.close();
-            } catch (error) {
-              console.error(error);
-            }
-
-          },
-          700
-        );
-
-        return;
       }
-
+    } catch (error) {
+      console.error("Rückgabe an Lager-App fehlgeschlagen:", error);
     }
 
-    catch (error) {
+    const returnUrl = new URLSearchParams(window.location.search).get("returnUrl");
 
-      console.error(
-        "Rückgabe an Lager-App fehlgeschlagen:",
-        error
-      );
-    }
-
-
-    /*
-     * Falls dieser Scanner direkt geöffnet wurde und
-     * deshalb kein opener vorhanden ist, wird der
-     * QR-Inhalt NICHT geöffnet.
-     */
-
-    if (!rueckgabeErfolgreich) {
-
+    if (returnUrl) {
       status.textContent =
-        "✓ QR-Code erkannt: " + text +
-        " – bitte zur Lager-App zurückkehren.";
+        "✓ Lagerplatz erkannt: " + text +
+        " – zurück zur Lager-App …";
 
+      setTimeout(function() {
+        try {
+          const url = new URL(returnUrl);
+          url.searchParams.set("lagerplatz", text);
+          window.location.replace(url.toString());
+        } catch (error) {
+          console.error("Rückgabe über returnUrl fehlgeschlagen:", error);
+          status.textContent = "QR-Code erkannt: " + text + " – bitte zur Lager-App zurückkehren.";
+        }
+      }, 500);
+      return;
     }
 
-  }
+    if (rueckgabeErfolgreich) {
+      status.textContent =
+        "✓ Lagerplatz erkannt: " + text +
+        " – zurück zur Lager-App …";
+      setTimeout(function() {
+        try { window.close(); } catch (error) { console.error(error); }
+      }, 700);
+      return;
+    }
 
+    status.textContent =
+      "✓ QR-Code erkannt: " + text +
+      " – bitte zur Lager-App zurückkehren.";
 
   window.addEventListener(
     "beforeunload",
