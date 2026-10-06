@@ -371,7 +371,7 @@
         window.opener.postMessage(
 
           {
-            typ: "DD_LAGER_QR_SCAN",
+            typ: "DS_LAGER_QR_SCAN",
             text: text
           },
 
@@ -385,6 +385,14 @@
           "✓ Lagerplatz erkannt: " + text +
           " – zurück zur Lager-App …";
 
+
+        /*
+         * Erst nach kurzer Zeit schließen.
+         * Falls der Browser das Schließen eines
+         * geöffneten Tabs nicht zulässt, bleibt eine
+         * sichtbare Rückmeldung stehen statt eines
+         * schwarzen Bildschirms.
+         */
 
         setTimeout(
           function() {
@@ -412,6 +420,12 @@
       );
     }
 
+
+    /*
+     * Falls dieser Scanner direkt geöffnet wurde und
+     * deshalb kein opener vorhanden ist, wird der
+     * QR-Inhalt NICHT geöffnet.
+     */
 
     if (!rueckgabeErfolgreich) {
 
