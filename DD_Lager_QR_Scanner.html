@@ -396,18 +396,15 @@
 
         setTimeout(
           function() {
-            const returnUrl = new URLSearchParams(window.location.search).get("returnUrl");
-            if (returnUrl) {
-              window.location.href = returnUrl + "?lagerplatz=" + encodeURIComponent(text);
-              return;
-            }
+
             try {
               window.close();
             } catch (error) {
               console.error(error);
             }
+
           },
-          500
+          700
         );
 
         return;
